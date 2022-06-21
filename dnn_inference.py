@@ -3,6 +3,8 @@ import cv2
 import argparse
 import random
 import time
+import os
+import os.path as osp
 
 class YOLOv4:
 
@@ -28,6 +30,7 @@ class YOLOv4:
         parser.add_argument('--namesfile', type=str, default='models/coco.names', help='Path to names to use')
         parser.add_argument('--input_size', type=int, default=416, help='Input size')
         parser.add_argument('--use_gpu', default=False, action='store_true', help='To use NVIDIA GPU or not')
+        parser.add_argument('--outdir', type=str, default="video", help='Location to put the output')
 
         self.args = parser.parse_args()
 
@@ -51,6 +54,9 @@ class YOLOv4:
         self.net.setInputSwapRB(True)
         with open(self.args.namesfile, 'rt') as f:
             self.names = f.read().rstrip('\n').split('\n')
+
+        if not osp.exists( self.args.outdir ):
+            os.makedirs( self.args.outdir )
 
     def image_inf(self):
         """ Method to run inference on image. """
@@ -86,15 +92,23 @@ class YOLOv4:
         g = random.randint(0, 255)
         r = random.randint(0, 255)
 
+        i = 0
+        total_start = time.time()
+        csv_file = open ( osp.join(self.args.outdir,'detections.csv'),"a")
         while(source.isOpened()):
             ret, frame = source.read()
+            if not ret and self.args.stream != 'webcam':
+                print("End of File")
+                break
             if ret:
                 timer = time.time()
                 classes, confidences, boxes = self.net.detect(frame, confThreshold=0.1, nmsThreshold=0.4)
                 print('[Info] Time Taken: {} | FPS: {}'.format(time.time() - timer, 1/(time.time() - timer)), end='\r')
                 
+
                 if(not len(classes) == 0):
                     for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
+                        className = self.names[classId]
                         label = '%s: %.2f' % (self.names[classId], confidence)
                         left, top, width, height = box
                         b = random.randint(0, 255)
@@ -104,9 +118,18 @@ class YOLOv4:
                         cv2.rectangle(frame, (left, top), (left + len(label) * 20, top - 30), (b, g, r), cv2.FILLED)
                         cv2.putText(frame, label, (left, top), cv2.FONT_HERSHEY_COMPLEX, 1, (255 - b, 255 - g, 255 - r), 1, cv2.LINE_AA)
 
-                cv2.imshow('Inference', frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+                        csv_file.write(f"{i},{className},{confidence},{left},{top},{width},{height}\n")
+
+                #cv2.imshow('Inference', frame)
+                if i % 100 == 0:
+                    print('writing frame %d'%i)
+                cv2.imwrite(osp.join( self.args.outdir,'video%d.jpg'%i),frame)
+                i = i + 1
+                #if cv2.waitKey(1) & 0xFF == ord('q'):
+                #    break
+        total_end = time.time()
+        csv_file.close()
+        print("Done! %d frame%s, %f seconds" % ( i, "s" if i != 1 else "", total_end - total_start))
 
     def run_inference(self):
 
@@ -120,7 +143,7 @@ class YOLOv4:
         elif not self.args.stream == '':
             self.stream_inf()
 
-        cv2.destroyAllWindows()
+        #cv2.destroyAllWindows()
 
 
 
