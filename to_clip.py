@@ -130,6 +130,8 @@ def create_clips( args ):
            }
        }
    }
+   if args.label != "":
+       video_add["AddVideo"]["properties"]["label"] = args.label
 
    query.append( video_add )
    
@@ -199,6 +201,7 @@ if __name__ == '__main__':
         parser.add_argument('--flush', action='store_true',  help='Remove old uuids from database')
         parser.add_argument('--nosave', action='store_true',  help='Dont add data')
         parser.add_argument('--video', type=str, required=True, help='Path to use detections')
+        parser.add_argument('--label', type=str, default="", help='Label to attach to the video')
 
         args = parser.parse_args()
         create_clips( args )
