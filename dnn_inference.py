@@ -105,6 +105,10 @@ class YOLOv4:
                 classes, confidences, boxes = self.net.detect(frame, confThreshold=0.1, nmsThreshold=0.4)
                 print('[Info] Time Taken: {} | FPS: {}'.format(time.time() - timer, 1/(time.time() - timer)), end='\r')
                 
+                if(not len(classes) == 0):
+                    for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
+                        className = self.names[classId]
+                        csv_file.write(f"{i},{className},{confidence},{left},{top},{width},{height}\n")
 
                 if(not len(classes) == 0):
                     for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
