@@ -19,7 +19,7 @@ def load_video( vfile):
     fd.close()
     return vbuf
 
-def create_clips( args ):
+def create_clips( args,db_conn = None ):
    add_data = []
    f = open( args.detections , 'r' )
    l = f.readline()
@@ -176,7 +176,7 @@ def create_clips( args ):
    print("Queries Assembled")
    if args.verbose:
        print(query)
-   db = connect()
+   db = connect() if db_conn is None else db_conn
    if args.flush:
         print(f"Delete Query: {delete_entity}")
         (del_result,data) = db.query(delete_entity)
