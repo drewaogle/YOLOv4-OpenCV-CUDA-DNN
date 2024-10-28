@@ -8,14 +8,14 @@ import os.path as osp
 
 class YOLOv4:
 
-    def __init__(self):
+    def __init__(self,args=None):
         """ Method called when object of this class is created. """
 
         self.args = None
         self.net = None
         self.names = None
 
-        self.parse_arguments()
+        self.args = self.parse_arguments() if args is None else args
         self.initialize_network()
         self.run_inference()
 
@@ -32,7 +32,7 @@ class YOLOv4:
         parser.add_argument('--use_gpu', default=False, action='store_true', help='To use NVIDIA GPU or not')
         parser.add_argument('--outdir', type=str, default="video", help='Location to put the output')
 
-        self.args = parser.parse_args()
+        return parser.parse_args()
 
     def initialize_network(self):
         """ Method to initialize and load the model. """
@@ -109,24 +109,13 @@ class YOLOv4:
                 if(not len(classes) == 0):
                     for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
                         className = self.names[classId]
-                        label = '%s: %.2f' % (self.names[classId], confidence)
                         left, top, width, height = box
-                        b = random.randint(0, 255)
-                        g = random.randint(0, 255)
-                        r = random.randint(0, 255)
-                        cv2.rectangle(frame, box, color=(b, g, r), thickness=2)
-                        cv2.rectangle(frame, (left, top), (left + len(label) * 20, top - 30), (b, g, r), cv2.FILLED)
-                        cv2.putText(frame, label, (left, top), cv2.FONT_HERSHEY_COMPLEX, 1, (255 - b, 255 - g, 255 - r), 1, cv2.LINE_AA)
-
                         csv_file.write(f"{i},{className},{confidence},{left},{top},{width},{height}\n")
 
-                #cv2.imshow('Inference', frame)
                 if i % 100 == 0:
                     print('writing frame %d'%i)
                 cv2.imwrite(osp.join( self.args.outdir,'video%d.jpg'%i),frame)
                 i = i + 1
-                #if cv2.waitKey(1) & 0xFF == ord('q'):
-                #    break
         total_end = time.time()
         csv_file.close()
         print("Done! %d frame%s, %f seconds" % ( i, "s" if i != 1 else "", total_end - total_start))
