@@ -9,6 +9,7 @@ import os.path as osp
 import urllib3
 from pathlib import Path
 import hashlib
+from tqdm import tqdm
 
 class YOLOv4:
 
@@ -35,6 +36,7 @@ class YOLOv4:
         parser.add_argument('--input_size', type=int, default=416, help='Input size')
         parser.add_argument('--use_gpu', default=False, action='store_true', help='To use NVIDIA GPU or not')
         parser.add_argument('--outdir', type=str, default="video", help='Location to put the output')
+        parser.add_argument('--no-squash-detections', action='store_true', help="Fail if detections ouput exists") 
 
         return parser.parse_args()
 
@@ -98,7 +100,11 @@ class YOLOv4:
 
         i = 0
         total_start = time.time()
-        csv_file = open ( osp.join(self.args.outdir,'detections.csv'),"a")
+        detection_file = Path(self.args.outdir).joinpath('detections.csv')
+        if self.args.no_squash_detections and detection_file.exists():
+            print(f"Detections exists ({detection_file}), and arguments request no overwriting")
+            return
+        csv_file = open ( detection_file,"a") 
         while(source.isOpened()):
             ret, frame = source.read()
             if not ret and self.args.stream != 'webcam':
@@ -159,7 +165,7 @@ class RemoteYOLOv4(YOLOv4):
     output_path="./models"
 
     def __init__(self,args=None):
-        print("REMOTEYOLO")
+        print("RemoteYOLO v4")
         self.http = urllib3.PoolManager()
         for f in self.files.keys():
             disk_path=Path(self.output_path).joinpath(f)
@@ -184,9 +190,11 @@ class RemoteYOLOv4(YOLOv4):
 
         req = self.http.request('GET', from_path, preload_content=False)
         with open( to_path, 'wb') as out:
+            pbar = tqdm( unit='B',unit_scale=True, desc=f"{to_path.name}", total=int( req.headers['Content-Length'] ))
             while True:
                 data = req.read(self.chunk_size)
                 if not data:
                     break
+                pbar.update(len(data))
                 out.write(data)
         req.release_conn()
