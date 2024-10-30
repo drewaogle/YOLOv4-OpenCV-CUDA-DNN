@@ -1,0 +1,41 @@
+name: video-clip-notebook-system
+
+services:
+  aperturedb:
+    image: aperturedb-with-loading:2024-11
+    environment:
+      ADB_KVGD_DB_SIZE: "204800"
+      ADB_LOG_PATH: "logs"
+      ADB_PORT: 55553
+      ADB_MAX_SIMULTANEOUS_CLIENTS: 1028
+      ADB_FORCE_SSL: false
+      DB_HOST: "localhost"
+      # $$ is escape for $
+      ADB_USERS: "yoloclip	dog@BIKE1244"
+    healthcheck:
+      test: bash health_and_users.sh || exit 1
+      interval: 10s
+      #interval: 1m
+      timeout: 10s
+      retries: 1
+      start_period: 20s
+      #start_interval: 5s
+    volumes:
+      - ./storage/db/objects:/aperturedb/db/objects
+      - ./storage/db/binlogs:/aperturedb/db/graph/binlogs
+      - ./storage/db/acl:/aperturedb/db/acl
+      - ./storage/db/logs:/aperturedb/logs
+  notebook:
+    image: video-clip-notebook
+    depends_on:
+      aperturedb:
+        condition: service_healthy
+    ports:
+      - 8888:8888
+    environment:
+      ADB_HOST: "aperturedb"
+      ADB_PORT: 55553
+      ADB_USER: "yoloclip"
+      ADB_PASS: "dog@BIKE1244"
+    volumes:
+      - ./data:/data
