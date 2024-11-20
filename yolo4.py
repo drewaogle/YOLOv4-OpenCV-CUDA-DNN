@@ -114,8 +114,7 @@ class YOLOv4:
             if ret:
                 timer = time.time()
                 classes, confidences, boxes = self.net.detect(frame, confThreshold=0.1, nmsThreshold=0.4)
-                #print('[Info] Time Taken: {} | FPS: {}'.format(time.time() - timer, 1/(time.time() - timer)), end='\r')
-                pbar.set_description(desc="Detecting: Last Time = {}".format.format(time.time() - timer))
+                pbar.set_description(desc="Detecting: Last Time = {}".format(time.time() - timer))
                 pbar.update()
                 
 
