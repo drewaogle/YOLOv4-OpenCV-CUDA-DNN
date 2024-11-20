@@ -106,7 +106,7 @@ class YOLOv4:
             print(f"Detections exists ({detection_file}), and arguments request no overwriting")
             return
         csv_file = open ( detection_file,"a") 
-        pbar = tqdm( unit='Frames', desc=f"Detecting" ) 
+        pbar = tqdm( unit=' Frames', desc=f"Detecting" ) 
         while(source.isOpened()):
             ret, frame = source.read()
             if not ret and self.args.stream != 'webcam':
@@ -114,7 +114,7 @@ class YOLOv4:
             if ret:
                 timer = time.time()
                 classes, confidences, boxes = self.net.detect(frame, confThreshold=0.1, nmsThreshold=0.4)
-                pbar.set_description(desc="Detecting: Last Time = {}".format(time.time() - timer))
+                pbar.set_description(desc="Detecting: Last Time = {:.2}s".format(time.time() - timer),refresh=False)
                 pbar.update()
                 
 
