@@ -11,6 +11,7 @@ from pathlib import Path
 import hashlib
 from tqdm import tqdm
 
+# source: https://github.com/kingardor/YOLOv4-OpenCV-CUDA-DNN
 class YOLOv4:
 
     def __init__(self,args=None):
@@ -105,15 +106,17 @@ class YOLOv4:
             print(f"Detections exists ({detection_file}), and arguments request no overwriting")
             return
         csv_file = open ( detection_file,"a") 
+        pbar = tqdm( unit='Frames', desc=f"Detecting" ) 
         while(source.isOpened()):
             ret, frame = source.read()
             if not ret and self.args.stream != 'webcam':
-                print("End of File")
                 break
             if ret:
                 timer = time.time()
                 classes, confidences, boxes = self.net.detect(frame, confThreshold=0.1, nmsThreshold=0.4)
-                print('[Info] Time Taken: {} | FPS: {}'.format(time.time() - timer, 1/(time.time() - timer)), end='\r')
+                #print('[Info] Time Taken: {} | FPS: {}'.format(time.time() - timer, 1/(time.time() - timer)), end='\r')
+                pbar.set_description(desc="Detecting: Last Time = {}".format.format(time.time() - timer))
+                pbar.update()
                 
 
                 if(not len(classes) == 0):
@@ -122,8 +125,6 @@ class YOLOv4:
                         left, top, width, height = box
                         csv_file.write(f"{i},{className},{confidence},{left},{top},{width},{height}\n")
 
-                if i % 100 == 0:
-                    print('writing frame %d'%i)
                 cv2.imwrite(osp.join( self.args.outdir,'video%d.jpg'%i),frame)
                 i = i + 1
         total_end = time.time()
@@ -171,6 +172,7 @@ class RemoteYOLOv4(YOLOv4):
             disk_path=Path(self.output_path).joinpath(f)
             disk_path.absolute().parent.mkdir( exist_ok=True)
             self.download_file( self.root+f, disk_path, self.files[f])
+        print("All YOLOv4 model files downloaded")
         super().__init__(args)
 
     def download_file(self, from_path, to_path, expected_sha256 ):
